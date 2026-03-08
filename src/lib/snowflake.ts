@@ -32,8 +32,10 @@ function getConnection(): Promise<snowflake.Connection> {
                 .replace(/-----END PRIVATE KEY-----/gi, '')
                 .replace(/-----BEGIN RSA PRIVATE KEY-----/gi, '')
                 .replace(/-----END RSA PRIVATE KEY-----/gi, '')
-                .replace(/\\n/g, '')     // Remove literal \n strings if pasted
-                .replace(/\s+/g, '');    // Strip all spaces, tabs, and actual newlines
+                // CRITICAL: Vercel often wraps multi-line environment variables in literal double quotes `"` or single quotes `'`.
+                // Plus, it might double-escape newlines.
+                // We strip absolutely EVERYTHING that isn't a valid Base64 character (A-Z, a-z, 0-9, +, /, =)
+                .replace(/[^A-Za-z0-9+/=]/g, '');
 
             // Snowflake and OpenSSL require newlines approximately every 64 characters for the raw base64 string
             const chunked = cleanKey.match(/.{1,64}/g)?.join('\n') || cleanKey;
