@@ -45,3 +45,5 @@ next-env.d.ts
 *.pub
 # Local setup scripts output
 key_for_snowflake.txt
+
+.vercel

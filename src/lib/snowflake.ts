@@ -24,11 +24,21 @@ function getConnection(): Promise<snowflake.Connection> {
             }
         }
 
-        // Format the key if the user strictly pasted the base64 content without headers
-        if (privateKey && !privateKey.includes('-----BEGIN PRIVATE KEY-----')) {
-            const cleanKey = privateKey.replace(/\s+/g, '');
-            // Snowflake requires newlines every 64 characters for the raw base64 string
+        // Format the key to ensure it is always perfectly formulated for OpenSSL
+        if (privateKey) {
+            // Strip out ANY existing headers, agnostically removing them and any whitespace
+            let cleanKey = privateKey
+                .replace(/-----BEGIN PRIVATE KEY-----/gi, '')
+                .replace(/-----END PRIVATE KEY-----/gi, '')
+                .replace(/-----BEGIN RSA PRIVATE KEY-----/gi, '')
+                .replace(/-----END RSA PRIVATE KEY-----/gi, '')
+                .replace(/\\n/g, '')     // Remove literal \n strings if pasted
+                .replace(/\s+/g, '');    // Strip all spaces, tabs, and actual newlines
+
+            // Snowflake and OpenSSL require newlines approximately every 64 characters for the raw base64 string
             const chunked = cleanKey.match(/.{1,64}/g)?.join('\n') || cleanKey;
+
+            // Re-wrap it with perfect boundaries and real newlines
             privateKey = `-----BEGIN PRIVATE KEY-----\n${chunked}\n-----END PRIVATE KEY-----`;
         }
 
